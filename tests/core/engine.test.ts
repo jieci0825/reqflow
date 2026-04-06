@@ -431,3 +431,326 @@ describe('插件系统', () => {
         )
     })
 })
+
+describe('便捷方法', () => {
+    it('.get() 等价于 .request({ method: "GET" })', async () => {
+        const adapter = createMockAdapter({ data: { users: [] } })
+        const engine = createRequest({ adapter })
+
+        const res = await engine.get<{ users: [] }>('/users')
+
+        expect(res.data).toEqual({ users: [] })
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({ url: '/users', method: 'GET' })
+        )
+    })
+
+    it('.post() 等价于 .request({ method: "POST", data })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+        const body = { name: 'Alice' }
+
+        await engine.post('/users', body)
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/users',
+                method: 'POST',
+                data: body,
+            })
+        )
+    })
+
+    it('.put() 等价于 .request({ method: "PUT", data })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+        const body = { name: 'Bob' }
+
+        await engine.put('/users/1', body)
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/users/1',
+                method: 'PUT',
+                data: body,
+            })
+        )
+    })
+
+    it('.delete() 等价于 .request({ method: "DELETE" })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+
+        await engine.delete('/users/1')
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({ url: '/users/1', method: 'DELETE' })
+        )
+    })
+
+    it('.patch() 等价于 .request({ method: "PATCH", data })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+        const body = { name: 'Charlie' }
+
+        await engine.patch('/users/1', body)
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/users/1',
+                method: 'PATCH',
+                data: body,
+            })
+        )
+    })
+
+    it('.head() 等价于 .request({ method: "HEAD" })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+
+        await engine.head('/users')
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({ url: '/users', method: 'HEAD' })
+        )
+    })
+
+    it('.options() 等价于 .request({ method: "OPTIONS" })', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+
+        await engine.options('/users')
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({ url: '/users', method: 'OPTIONS' })
+        )
+    })
+
+    it('.get() 可传递额外配置', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+
+        await engine.get('/users', {
+            headers: { 'X-Custom': 'value' },
+            params: { page: 1 },
+        })
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/users',
+                method: 'GET',
+                headers: { 'X-Custom': 'value' },
+                params: { page: 1 },
+            })
+        )
+    })
+
+    it('.post() 可传递额外配置', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({ adapter })
+
+        await engine.post('/users', { name: 'Alice' }, {
+            headers: { 'Content-Type': 'application/json' },
+        })
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/users',
+                method: 'POST',
+                data: { name: 'Alice' },
+                headers: { 'Content-Type': 'application/json' },
+            })
+        )
+    })
+
+    it('便捷方法与 baseURL 正确拼接', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({
+            adapter,
+            baseURL: 'https://api.example.com',
+        })
+
+        await engine.get('/users')
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'https://api.example.com/users',
+            })
+        )
+    })
+
+    it('便捷方法与全局 headers 正确合并', async () => {
+        const adapter = createMockAdapter()
+        const engine = createRequest({
+            adapter,
+            headers: { 'X-Global': 'yes' },
+        })
+
+        await engine.get('/users', {
+            headers: { 'X-Request': 'yes' },
+        })
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                headers: { 'X-Global': 'yes', 'X-Request': 'yes' },
+            })
+        )
+    })
+})
+
+describe('请求级中间件', () => {
+    it('请求级中间件在全局中间件内层执行', async () => {
+        const order: string[] = []
+        const adapter = createMockAdapter()
+
+        const globalMiddleware: Middleware = async (config, next) => {
+            order.push('global-before')
+            const res = await next(config)
+            order.push('global-after')
+            return res
+        }
+
+        const requestMiddleware: Middleware = async (config, next) => {
+            order.push('request-before')
+            const res = await next(config)
+            order.push('request-after')
+            return res
+        }
+
+        const plugin = {
+            name: 'global-mw',
+            setup(ctx: { useMiddleware: (mw: Middleware) => void }) {
+                ctx.useMiddleware(globalMiddleware)
+            },
+        }
+
+        const engine = createRequest({ adapter, plugins: [plugin] })
+        await engine.request({
+            url: '/test',
+            method: 'GET',
+            middleware: [requestMiddleware],
+        })
+
+        expect(order).toEqual([
+            'global-before',
+            'request-before',
+            'request-after',
+            'global-after',
+        ])
+    })
+
+    it('多个请求级中间件按数组顺序执行', async () => {
+        const order: string[] = []
+        const adapter = createMockAdapter()
+
+        const mwA: Middleware = async (config, next) => {
+            order.push('A-before')
+            const res = await next(config)
+            order.push('A-after')
+            return res
+        }
+
+        const mwB: Middleware = async (config, next) => {
+            order.push('B-before')
+            const res = await next(config)
+            order.push('B-after')
+            return res
+        }
+
+        const engine = createRequest({ adapter })
+        await engine.request({
+            url: '/test',
+            method: 'GET',
+            middleware: [mwA, mwB],
+        })
+
+        expect(order).toEqual([
+            'A-before',
+            'B-before',
+            'B-after',
+            'A-after',
+        ])
+    })
+
+    it('请求级中间件可以修改请求配置', async () => {
+        const adapter = createMockAdapter()
+
+        const mw: Middleware = async (config, next) => {
+            return next({
+                ...config,
+                headers: { ...config.headers, 'X-Request-MW': 'yes' },
+            })
+        }
+
+        const engine = createRequest({ adapter })
+        await engine.request({
+            url: '/test',
+            method: 'GET',
+            middleware: [mw],
+        })
+
+        expect(adapter.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                headers: { 'X-Request-MW': 'yes' },
+            })
+        )
+    })
+
+    it('请求级中间件可以修改响应', async () => {
+        const adapter = createMockAdapter({ data: { original: true } })
+
+        const mw: Middleware = async (config, next) => {
+            const res = await next(config)
+            return { ...res, data: { ...res.data, injected: true } }
+        }
+
+        const engine = createRequest({ adapter })
+        const res = await engine.request({
+            url: '/test',
+            method: 'GET',
+            middleware: [mw],
+        })
+
+        expect(res.data).toEqual({ original: true, injected: true })
+    })
+
+    it('无请求级中间件时正常工作', async () => {
+        const adapter = createMockAdapter({ data: 'ok' })
+        const engine = createRequest({ adapter })
+
+        const res = await engine.request({ url: '/test', method: 'GET' })
+
+        expect(res.data).toBe('ok')
+    })
+
+    it('通过便捷方法传递请求级中间件', async () => {
+        const order: string[] = []
+        const adapter = createMockAdapter()
+
+        const mw: Middleware = async (config, next) => {
+            order.push('request-mw')
+            return next(config)
+        }
+
+        const engine = createRequest({ adapter })
+        await engine.get('/test', { middleware: [mw] })
+
+        expect(order).toEqual(['request-mw'])
+    })
+
+    it('middleware 字段不会传递给适配器', async () => {
+        const adapter = createMockAdapter()
+        const mw: Middleware = async (config, next) => next(config)
+
+        const engine = createRequest({ adapter })
+        await engine.request({
+            url: '/test',
+            method: 'GET',
+            middleware: [mw],
+        })
+
+        const calledConfig = (adapter.request as ReturnType<typeof vi.fn>)
+            .mock.calls[0][0]
+        expect(calledConfig).not.toHaveProperty('middleware')
+    })
+})

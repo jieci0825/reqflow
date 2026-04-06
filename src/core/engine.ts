@@ -48,8 +48,73 @@ class RequestEngine {
     /** 发送请求，将配置经过中间件管线后交由适配器执行 */
     async request<T = any>(requestConfig: RequestConfig): Promise<Response<T>> {
         const mergedConfig = this.mergeConfig(requestConfig)
-        const dispatch = compose(this.middlewares, this.adapter)
-        return dispatch(mergedConfig) as Promise<Response<T>>
+        const { middleware: requestMiddleware, ...config } = mergedConfig
+
+        const middlewares = requestMiddleware
+            ? [...this.middlewares, ...requestMiddleware]
+            : this.middlewares
+
+        const dispatch = compose(middlewares, this.adapter)
+        return dispatch(config) as Promise<Response<T>>
+    }
+
+    /** 发送 GET 请求 */
+    get<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'GET' })
+    }
+
+    /** 发送 POST 请求 */
+    post<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'POST', data })
+    }
+
+    /** 发送 PUT 请求 */
+    put<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'PUT', data })
+    }
+
+    /** 发送 DELETE 请求 */
+    delete<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'DELETE' })
+    }
+
+    /** 发送 PATCH 请求 */
+    patch<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'PATCH', data })
+    }
+
+    /** 发送 HEAD 请求 */
+    head<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'HEAD' })
+    }
+
+    /** 发送 OPTIONS 请求 */
+    options<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>> {
+        return this.request<T>({ ...config, url, method: 'OPTIONS' })
     }
 
     /** 将全局配置与请求级配置合并，请求级优先 */
