@@ -9,7 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
-docs
+project-docs
 dist-ssr
 *.local
 pnpm-lock.yaml
