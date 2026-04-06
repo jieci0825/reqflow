@@ -1,0 +1,21 @@
+{
+    "name": "reqflow",
+    "version": "0.0.1",
+    "description": "一个基于插件与中间件的请求管线框架，支持 fetch、axios 等多种适配器。",
+    "author": "coderjc <coderjc@qq.com>",
+    "repository": "https://github.com/jieci0825/reqflow",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "build": "tsdown"
+    },
+    "devDependencies": {
+        "@types/node": "^25.5.2",
+        "tsdown": "^0.21.7",
+        "typescript": "^6.0.2",
+        "vitest": "^4.1.2"
+    }
+}
