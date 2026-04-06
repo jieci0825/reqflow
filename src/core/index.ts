@@ -1,3 +1,5 @@
+export { compose } from './pipeline'
+
 export type {
     Adapter,
     GlobalConfig,

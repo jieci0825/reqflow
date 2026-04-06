@@ -1,11 +1,13 @@
+export { compose } from './core'
+
 export type {
-  Adapter,
-  GlobalConfig,
-  Method,
-  Middleware,
-  Next,
-  Plugin,
-  PluginContext,
-  RequestConfig,
-  Response,
+    Adapter,
+    GlobalConfig,
+    Method,
+    Middleware,
+    Next,
+    Plugin,
+    PluginContext,
+    RequestConfig,
+    Response,
 } from './core'
