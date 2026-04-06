@@ -1,1 +1,1 @@
-export {}
+export { fetchAdapter } from './fetch'
