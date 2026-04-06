@@ -143,7 +143,7 @@ describe('compose', () => {
         const dispatch = compose([badMiddleware], adapter)
 
         await expect(dispatch(createConfig())).rejects.toThrow(
-            'next() called multiple times'
+            'next() 被重复调用'
         )
     })
 
@@ -156,7 +156,9 @@ describe('compose', () => {
 
         const dispatch = compose([errorMiddleware], adapter)
 
-        await expect(dispatch(createConfig())).rejects.toThrow('middleware error')
+        await expect(dispatch(createConfig())).rejects.toThrow(
+            'middleware error'
+        )
     })
 
     it('外层中间件可以 catch 内层抛出的异常', async () => {
@@ -192,7 +194,11 @@ describe('compose', () => {
             try {
                 return await next(config)
             } catch {
-                return createResponse({ data: null, status: 0, statusText: 'Network Error' })
+                return createResponse({
+                    data: null,
+                    status: 0,
+                    statusText: 'Network Error',
+                })
             }
         }
 
@@ -207,7 +213,7 @@ describe('compose', () => {
         const timeline: string[] = []
 
         const adapter: Adapter = {
-            request: vi.fn(async (config) => {
+            request: vi.fn(async config => {
                 timeline.push('adapter')
                 return createResponse({ config, data: 'response' })
             }),
@@ -238,9 +244,13 @@ describe('compose', () => {
         await dispatch(createConfig())
 
         expect(timeline).toEqual([
-            'm1-in', 'm2-in', 'm3-in',
+            'm1-in',
+            'm2-in',
+            'm3-in',
             'adapter',
-            'm3-out', 'm2-out', 'm1-out',
+            'm3-out',
+            'm2-out',
+            'm1-out',
         ])
     })
 })
