@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        />
+        <title>Reqflow Playground</title>
+        <link
+            rel="stylesheet"
+            href="./style.css"
+        />
+        <script type="importmap">
+            {
+                "imports": {
+                    "reqflow": "/dist/index.mjs",
+                    "reqflow/adapters/fetch": "/dist/adapters/fetch.mjs",
+                    "reqflow/plugins": "/dist/plugins.mjs"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <header>
+            <h1>Reqflow Playground</h1>
+            <p>基于 dist 产物的真实端到端验证</p>
+        </header>
+
+        <main>
+            <!-- 1. GET 用户列表 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/users</h2>
+                    <span class="badge">GET</span>
+                </div>
+                <p>使用 <code>request.get()</code> 获取用户列表</p>
+                <button id="btn-get-users">发送请求</button>
+                <pre
+                    id="panel-get-users"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 2. GET 单个用户 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/users/:id</h2>
+                    <span class="badge">GET</span>
+                </div>
+                <p>使用 <code>request.get()</code> 获取单个用户</p>
+                <div class="form-row">
+                    <label
+                        >用户 ID：<input
+                            id="input-user-id"
+                            type="number"
+                            value="1"
+                            min="1"
+                    /></label>
+                </div>
+                <button id="btn-get-user">发送请求</button>
+                <pre
+                    id="panel-get-user"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 3. POST 创建用户 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>POST /api/users</h2>
+                    <span class="badge badge-post">POST</span>
+                </div>
+                <p>使用 <code>request.post()</code> 创建新用户</p>
+                <div class="form-row">
+                    <label
+                        >姓名：<input
+                            id="input-name"
+                            type="text"
+                            value="赵六"
+                    /></label>
+                    <label
+                        >邮箱：<input
+                            id="input-email"
+                            type="text"
+                            value="zhaoliu@example.com"
+                    /></label>
+                </div>
+                <button id="btn-post-user">发送请求</button>
+                <pre
+                    id="panel-post-user"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 4. Token 认证（有 token） -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/protected（有 Token）</h2>
+                    <span class="badge badge-auth">AUTH</span>
+                </div>
+                <p>
+                    tokenPlugin 自动注入 Authorization 头，服务端回显收到的令牌
+                </p>
+                <div class="form-row">
+                    <label
+                        >Token：<input
+                            id="input-token"
+                            type="text"
+                            value="my-jwt-token-abc123"
+                    /></label>
+                </div>
+                <button id="btn-protected-ok">发送请求</button>
+                <pre
+                    id="panel-protected-ok"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 5. Token 认证（无 token） -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/protected（无 Token）</h2>
+                    <span class="badge badge-auth">AUTH</span>
+                </div>
+                <p>将 token 置空后发送请求，预期返回 401 并触发 errorPlugin</p>
+                <button id="btn-protected-fail">发送请求</button>
+                <pre
+                    id="panel-protected-fail"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 6. 500 错误 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/error/500</h2>
+                    <span class="badge badge-error">ERROR</span>
+                </div>
+                <p>触发 HTTP 500 错误，验证 errorPlugin 的 onError 回调</p>
+                <button id="btn-error-500">发送请求</button>
+                <pre
+                    id="panel-error-500"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 7. 超时测试 -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>GET /api/slow（超时 1s）</h2>
+                    <span class="badge badge-error">TIMEOUT</span>
+                </div>
+                <p>服务端延迟 3s 响应，客户端超时设为 1s，验证超时中止行为</p>
+                <button id="btn-timeout">发送请求</button>
+                <pre
+                    id="panel-timeout"
+                    class="output"
+                ></pre>
+            </section>
+
+            <!-- 错误日志 -->
+            <section class="card card-log">
+                <div class="card-header">
+                    <h2>errorPlugin 日志</h2>
+                    <button
+                        id="btn-clear-errors"
+                        class="btn-small"
+                    >
+                        清空
+                    </button>
+                </div>
+                <p>所有经过 errorPlugin onError 回调的错误信息</p>
+                <pre
+                    id="panel-errors"
+                    class="output"
+                ></pre>
+            </section>
+        </main>
+
+        <script
+            type="module"
+            src="./app.js"
+        ></script>
+    </body>
+</html>

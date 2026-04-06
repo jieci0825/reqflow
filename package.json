@@ -6,11 +6,51 @@
     "repository": "https://github.com/jieci0825/reqflow",
     "license": "MIT",
     "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.mts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.mts",
+                "default": "./dist/index.mjs"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        },
+        "./adapters/fetch": {
+            "import": {
+                "types": "./dist/adapters/fetch.d.mts",
+                "default": "./dist/adapters/fetch.mjs"
+            },
+            "require": {
+                "types": "./dist/adapters/fetch.d.cts",
+                "default": "./dist/adapters/fetch.cjs"
+            }
+        },
+        "./plugins": {
+            "import": {
+                "types": "./dist/plugins.d.mts",
+                "default": "./dist/plugins.mjs"
+            },
+            "require": {
+                "types": "./dist/plugins.d.cts",
+                "default": "./dist/plugins.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "sideEffects": false,
     "scripts": {
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
-        "build": "tsdown"
+        "build": "tsdown",
+        "server": "node playgrounds/server.js"
     },
     "devDependencies": {
         "@types/node": "^25.5.2",
