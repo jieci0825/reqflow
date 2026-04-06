@@ -1,3 +1,4 @@
+export { createRequest } from './core'
 export { compose } from './core'
 
 export type {

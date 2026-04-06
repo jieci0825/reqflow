@@ -1,3 +1,4 @@
+export { createRequest } from './engine'
 export { compose } from './pipeline'
 
 export type {
