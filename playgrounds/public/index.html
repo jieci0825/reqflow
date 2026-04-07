@@ -22,6 +22,7 @@
         </script>
     </head>
     <body>
+        <div id="loading-bar" class="loading-bar"></div>
         <header>
             <h1>Reqflow Playground</h1>
             <p>基于 dist 产物的真实端到端验证</p>
@@ -157,6 +158,52 @@
                     id="panel-timeout"
                     class="output"
                 ></pre>
+            </section>
+
+            <!-- 8. loadingPlugin 演示 -->
+            <section class="card card-loading">
+                <div class="card-header">
+                    <h2>loadingPlugin 演示</h2>
+                    <span class="badge" style="background: rgba(251, 146, 60, 0.2); color: var(--orange);">LOADING</span>
+                </div>
+                <p>
+                    页面顶部的加载指示条由 <code>loadingPlugin</code> 驱动，
+                    配置 <code>delay: 200</code> 避免快速请求闪烁
+                </p>
+                <div class="form-row">
+                    <label>延迟(ms)：<input id="input-delay-ms" type="number" value="2000" min="0" max="10000" /></label>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-loading-slow">慢速请求</button>
+                    <button id="btn-loading-fast">快速请求（50ms）</button>
+                    <button id="btn-loading-silent">静默请求（不触发）</button>
+                    <button id="btn-loading-concurrent">并发 3 个请求</button>
+                </div>
+                <pre id="panel-loading" class="output"></pre>
+            </section>
+
+            <!-- 9. retryPlugin 演示 -->
+            <section class="card card-retry">
+                <div class="card-header">
+                    <h2>retryPlugin 演示</h2>
+                    <span class="badge" style="background: rgba(167, 139, 250, 0.2); color: var(--purple);">RETRY</span>
+                </div>
+                <p>
+                    使用 <code>retryPlugin</code> 在请求失败时自动重试，
+                    支持固定延迟与指数退避策略
+                </p>
+                <div class="form-row">
+                    <label>最大重试次数：<input id="input-max-retries" type="number" value="3" min="1" max="10" /></label>
+                    <label>服务端失败次数：<input id="input-fail-count" type="number" value="2" min="0" max="10" /></label>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-retry-basic">基本重试（无延迟）</button>
+                    <button id="btn-retry-delay">固定延迟（500ms）</button>
+                    <button id="btn-retry-backoff">指数退避</button>
+                    <button id="btn-retry-fail">重试全部失败</button>
+                    <button id="btn-retry-condition">条件重试（仅 5xx）</button>
+                </div>
+                <pre id="panel-retry" class="output"></pre>
             </section>
 
             <!-- 错误日志 -->

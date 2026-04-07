@@ -1,6 +1,6 @@
 import { createRequest } from 'reqflow'
 import { fetchAdapter } from 'reqflow/adapters/fetch'
-import { errorPlugin, tokenPlugin } from 'reqflow/plugins'
+import { errorPlugin, loadingPlugin, retryPlugin, tokenPlugin } from 'reqflow/plugins'
 
 // ── 工具函数 ──
 
@@ -37,6 +37,11 @@ const request = createRequest({
     adapter: fetchAdapter(),
     baseURL: API_BASE,
     plugins: [
+        loadingPlugin({
+            onShow: () => $('loading-bar').classList.add('active'),
+            onHide: () => $('loading-bar').classList.remove('active'),
+            delay: 200,
+        }),
         errorPlugin({
             onError(error) {
                 log(
@@ -187,6 +192,213 @@ $('btn-timeout').addEventListener('click', async () => {
         log('panel-timeout', 'success', JSON.stringify(res.data, null, 2))
     } catch (err) {
         log('panel-timeout', 'error', `✗ 请求超时或中止: ${err.message}`)
+    }
+})
+
+// ── 8. loadingPlugin 演示 ──
+
+$('btn-loading-slow').addEventListener('click', async () => {
+    clear('panel-loading')
+    const ms = $('input-delay-ms').value || 2000
+    log('panel-loading', 'info', `[${formatTime()}] → GET /api/delay/${ms}`)
+    log('panel-loading', 'info', `[${formatTime()}] loading 配置: delay=200ms，请求 >200ms 时顶部加载条出现`)
+    try {
+        const res = await request.get(`/api/delay/${ms}`)
+        log('panel-loading', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+    } catch (err) {
+        log('panel-loading', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-loading-fast').addEventListener('click', async () => {
+    clear('panel-loading')
+    log('panel-loading', 'info', `[${formatTime()}] → GET /api/delay/50`)
+    log('panel-loading', 'info', `[${formatTime()}] 请求仅 50ms，低于 delay=200ms 阈值，加载条不会出现`)
+    try {
+        const res = await request.get('/api/delay/50')
+        log('panel-loading', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+    } catch (err) {
+        log('panel-loading', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-loading-silent').addEventListener('click', async () => {
+    clear('panel-loading')
+    log('panel-loading', 'info', `[${formatTime()}] → GET /api/delay/2000 (meta.silent = true)`)
+    log('panel-loading', 'info', `[${formatTime()}] silent 请求不参与 loading 计数，加载条不会出现`)
+    try {
+        const res = await request.get('/api/delay/2000', { meta: { silent: true } })
+        log('panel-loading', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+    } catch (err) {
+        log('panel-loading', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-loading-concurrent').addEventListener('click', async () => {
+    clear('panel-loading')
+    log('panel-loading', 'info', `[${formatTime()}] → 并发 3 个请求: /api/delay/1000, /api/delay/2000, /api/delay/3000`)
+    log('panel-loading', 'info', `[${formatTime()}] 加载条在第一个请求进入时出现，最后一个完成后消失`)
+    try {
+        const results = await Promise.all([
+            request.get('/api/delay/1000'),
+            request.get('/api/delay/2000'),
+            request.get('/api/delay/3000'),
+        ])
+        for (const res of results) {
+            log('panel-loading', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        }
+    } catch (err) {
+        log('panel-loading', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+// ── 9. retryPlugin 演示 ──
+
+let retryKey = 0
+
+function createRetryRequest(retryOpts) {
+    return createRequest({
+        adapter: fetchAdapter(),
+        baseURL: API_BASE,
+        plugins: [
+            retryPlugin(retryOpts),
+            errorPlugin({
+                onError(error) {
+                    log(
+                        'panel-errors',
+                        'error',
+                        `[${formatTime()}] [${error.type}] ${error.message}`
+                    )
+                },
+            }),
+        ],
+    })
+}
+
+$('btn-retry-basic').addEventListener('click', async () => {
+    clear('panel-retry')
+    const maxRetries = Number($('input-max-retries').value) || 3
+    const failCount = Number($('input-fail-count').value) || 2
+    const key = `basic-${++retryKey}`
+
+    log('panel-retry', 'info', `[${formatTime()}] 配置: maxRetries=${maxRetries}, delay=0, 服务端失败${failCount}次后成功`)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/flaky/${failCount}`)
+
+    const req = createRetryRequest({ maxRetries })
+    try {
+        const res = await req.get(`/api/flaky/${failCount}?key=${key}`)
+        log('panel-retry', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        const retries = res.config?.meta?.retryCount || 0
+        log('panel-retry', 'success', `[${formatTime()}] 共重试 ${retries} 次`)
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-retry-delay').addEventListener('click', async () => {
+    clear('panel-retry')
+    const maxRetries = Number($('input-max-retries').value) || 3
+    const failCount = Number($('input-fail-count').value) || 2
+    const key = `delay-${++retryKey}`
+
+    log('panel-retry', 'info', `[${formatTime()}] 配置: maxRetries=${maxRetries}, delay=500ms, 服务端失败${failCount}次后成功`)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/flaky/${failCount}`)
+
+    const req = createRetryRequest({ maxRetries, delay: 500 })
+    try {
+        const res = await req.get(`/api/flaky/${failCount}?key=${key}`)
+        log('panel-retry', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        const retries = res.config?.meta?.retryCount || 0
+        log('panel-retry', 'success', `[${formatTime()}] 共重试 ${retries} 次，每次间隔 500ms`)
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-retry-backoff').addEventListener('click', async () => {
+    clear('panel-retry')
+    const maxRetries = Number($('input-max-retries').value) || 3
+    const failCount = Number($('input-fail-count').value) || 2
+    const key = `backoff-${++retryKey}`
+
+    const backoffFn = (attempt) => Math.min(1000 * Math.pow(2, attempt - 1), 8000)
+    log('panel-retry', 'info', `[${formatTime()}] 配置: maxRetries=${maxRetries}, delay=指数退避 min(1000*2^(n-1), 8000)ms`)
+    log('panel-retry', 'info', `[${formatTime()}] 退避序列: ${Array.from({ length: maxRetries }, (_, i) => backoffFn(i + 1) + 'ms').join(' → ')}`)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/flaky/${failCount}`)
+
+    const req = createRetryRequest({ maxRetries, delay: backoffFn })
+    try {
+        const res = await req.get(`/api/flaky/${failCount}?key=${key}`)
+        log('panel-retry', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        const retries = res.config?.meta?.retryCount || 0
+        log('panel-retry', 'success', `[${formatTime()}] 共重试 ${retries} 次（指数退避）`)
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+})
+
+$('btn-retry-fail').addEventListener('click', async () => {
+    clear('panel-retry')
+    const maxRetries = Number($('input-max-retries').value) || 3
+    const key = `fail-${++retryKey}`
+    const failCount = maxRetries + 5
+
+    log('panel-retry', 'info', `[${formatTime()}] 配置: maxRetries=${maxRetries}, 服务端持续失败${failCount}次`)
+    log('panel-retry', 'info', `[${formatTime()}] 预期: 重试 ${maxRetries} 次后仍失败，返回最后的错误响应`)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/flaky/${failCount}`)
+
+    const req = createRetryRequest({ maxRetries, delay: 300 })
+    try {
+        const res = await req.get(`/api/flaky/${failCount}?key=${key}`)
+        if (res.status >= 400) {
+            log('panel-retry', 'warn', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+            log('panel-retry', 'warn', `[${formatTime()}] 重试耗尽，返回最终失败响应`)
+        } else {
+            log('panel-retry', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        }
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ 重试耗尽: ${err.message}`)
+    }
+})
+
+$('btn-retry-condition').addEventListener('click', async () => {
+    clear('panel-retry')
+    const maxRetries = Number($('input-max-retries').value) || 3
+    const key = `cond-${++retryKey}`
+
+    log('panel-retry', 'info', `[${formatTime()}] 配置: maxRetries=${maxRetries}, retryOn=仅 HTTP 5xx 错误`)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/flaky/2 (5xx 错误，会重试)`)
+
+    const req = createRetryRequest({
+        maxRetries,
+        delay: 300,
+        retryOn: (error) => error.type === 'http' && error.status >= 500,
+    })
+
+    try {
+        const res = await req.get(`/api/flaky/2?key=${key}`)
+        log('panel-retry', 'success', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        const retries = res.config?.meta?.retryCount || 0
+        log('panel-retry', 'success', `[${formatTime()}] 共重试 ${retries} 次（仅 5xx 条件触发）`)
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
+    }
+
+    log('panel-retry', 'info', ``)
+    log('panel-retry', 'info', `[${formatTime()}] → GET /api/protected (401 错误，不满足 retryOn 条件，不会重试)`)
+
+    const req2 = createRetryRequest({
+        maxRetries,
+        delay: 300,
+        retryOn: (error) => error.type === 'http' && error.status >= 500,
+    })
+
+    try {
+        const res = await req2.get('/api/protected')
+        log('panel-retry', 'warn', `[${formatTime()}] ← ${res.status} ${JSON.stringify(res.data)}`)
+        log('panel-retry', 'warn', `[${formatTime()}] 401 不满足 5xx 条件，未重试，直接返回`)
+    } catch (err) {
+        log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
     }
 })
 

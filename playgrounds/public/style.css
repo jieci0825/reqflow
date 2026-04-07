@@ -225,6 +225,44 @@ button:disabled {
     border-color: rgba(248, 113, 113, 0.3);
 }
 
+.card-loading {
+    border-color: rgba(251, 146, 60, 0.3);
+}
+
+.card-retry {
+    border-color: rgba(167, 139, 250, 0.3);
+}
+
+.loading-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--purple), var(--accent));
+    background-size: 200% 100%;
+    opacity: 0;
+    z-index: 9999;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.loading-bar.active {
+    opacity: 1;
+    animation: loading-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-slide {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 ::-webkit-scrollbar {
     width: 6px;
 }

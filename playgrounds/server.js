@@ -72,6 +72,47 @@ router.get('/slow', async ctx => {
     ctx.body = { code: 0, data: { message: '慢速响应完成（耗时 3s）' } }
 })
 
+router.get('/delay/:ms', async ctx => {
+    const ms = Math.min(Math.max(Number(ctx.params.ms) || 0, 0), 10000)
+    await new Promise(r => setTimeout(r, ms))
+    ctx.body = { code: 0, data: { message: `响应完成（延迟 ${ms}ms）`, delay: ms } }
+})
+
+// ── Flaky 端点：前 N 次请求返回 500，之后成功 ──
+
+const flakyCounters = new Map()
+
+router.get('/flaky/:failCount', ctx => {
+    const failCount = Math.max(Number(ctx.params.failCount) || 0, 0)
+    const key = ctx.query.key || 'default'
+    const current = flakyCounters.get(key) || 0
+    flakyCounters.set(key, current + 1)
+
+    if (current < failCount) {
+        ctx.status = 500
+        ctx.body = {
+            code: 500,
+            message: `模拟失败 (${current + 1}/${failCount})`,
+            attempt: current + 1,
+        }
+        return
+    }
+
+    flakyCounters.delete(key)
+    ctx.body = {
+        code: 0,
+        data: {
+            message: `第 ${current + 1} 次请求成功`,
+            totalAttempts: current + 1,
+        },
+    }
+})
+
+router.post('/flaky/reset', ctx => {
+    flakyCounters.clear()
+    ctx.body = { code: 0, data: { message: '计数器已重置' } }
+})
+
 // ── 中间件 & 静态文件 ──
 
 app.use(cors())
