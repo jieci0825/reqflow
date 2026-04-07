@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "jsx": "preserve",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true,
+        "paths": {
+            "@/*": ["./src/*"],
+            "reqflow": ["../dist/index.d.mts"],
+            "reqflow/adapters/fetch": ["../dist/adapters/fetch.d.mts"],
+            "reqflow/plugins": ["../dist/plugins.d.mts"]
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"],
+    "exclude": ["node_modules", "dist"]
+}

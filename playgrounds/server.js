@@ -2,13 +2,6 @@ import Koa from 'koa'
 import Router from '@koa/router'
 import cors from '@koa/cors'
 import bodyParser from 'koa-bodyparser'
-import serve from 'koa-static'
-import mount from 'koa-mount'
-import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
 const app = new Koa()
 const router = new Router({ prefix: '/api' })
 
@@ -139,14 +132,12 @@ router.post('/dedup-test/reset', ctx => {
     ctx.body = { code: 0, data: { message: '去重计数器已重置' } }
 })
 
-// ── 中间件 & 静态文件 ──
+// ── 中间件 ──
 
 app.use(cors())
 app.use(bodyParser())
 app.use(router.routes())
 app.use(router.allowedMethods())
-app.use(mount('/dist', serve(resolve(__dirname, '../dist'))))
-app.use(serve(resolve(__dirname, 'public')))
 
 // ── 启动 ──
 
