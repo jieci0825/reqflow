@@ -1,17 +1,12 @@
 {
-    "name": "reqflow-playground",
+    "name": "reqflow-playground-web",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vue-tsc -b && vite build",
-        "server": "node server.js"
+        "build": "vue-tsc -b && vite build"
     },
     "dependencies": {
-        "@koa/cors": "^5.0.0",
-        "@koa/router": "^15.4.0",
-        "koa": "^3.2.0",
-        "koa-bodyparser": "^4.4.1",
         "vue": "^3.5.13",
         "vue-router": "^4.5.0"
     },

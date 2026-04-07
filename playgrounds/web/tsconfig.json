@@ -15,9 +15,9 @@
         "noEmit": true,
         "paths": {
             "@/*": ["./src/*"],
-            "reqflow": ["../dist/index.d.mts"],
-            "reqflow/adapters/fetch": ["../dist/adapters/fetch.d.mts"],
-            "reqflow/plugins": ["../dist/plugins.d.mts"]
+            "reqflow": ["../../dist/index.d.mts"],
+            "reqflow/adapters/fetch": ["../../dist/adapters/fetch.d.mts"],
+            "reqflow/plugins": ["../../dist/plugins.d.mts"]
         }
     },
     "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"],

@@ -8,9 +8,9 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': resolve(__dirname, 'src'),
-            'reqflow/adapters/fetch': resolve(__dirname, '../dist/adapters/fetch.mjs'),
-            'reqflow/plugins': resolve(__dirname, '../dist/plugins.mjs'),
-            'reqflow': resolve(__dirname, '../dist/index.mjs'),
+            'reqflow/adapters/fetch': resolve(__dirname, '../../dist/adapters/fetch.mjs'),
+            'reqflow/plugins': resolve(__dirname, '../../dist/plugins.mjs'),
+            'reqflow': resolve(__dirname, '../../dist/index.mjs'),
         },
     },
     server: {
