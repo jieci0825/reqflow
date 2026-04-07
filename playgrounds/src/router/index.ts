@@ -43,6 +43,12 @@ export const navItems = [
         badge: 'CACHE',
         badgeColor: 'green',
     },
+    {
+        path: '/race-plugin',
+        label: 'Race 插件',
+        badge: 'RACE',
+        badgeColor: 'cyan',
+    },
 ] as const
 
 export const router = createRouter({
@@ -76,6 +82,10 @@ export const router = createRouter({
         {
             path: '/cache-plugin',
             component: () => import('@/demos/cache-plugin/index.vue'),
+        },
+        {
+            path: '/race-plugin',
+            component: () => import('@/demos/race-plugin/index.vue'),
         },
     ],
 })
