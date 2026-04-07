@@ -1,6 +1,6 @@
 import { createRequest } from 'reqflow'
 import { fetchAdapter } from 'reqflow/adapters/fetch'
-import { errorPlugin, loadingPlugin, retryPlugin, tokenPlugin } from 'reqflow/plugins'
+import { dedupPlugin, errorPlugin, loadingPlugin, retryPlugin, tokenPlugin } from 'reqflow/plugins'
 
 // ── 工具函数 ──
 
@@ -400,6 +400,118 @@ $('btn-retry-condition').addEventListener('click', async () => {
     } catch (err) {
         log('panel-retry', 'error', `[${formatTime()}] ✗ ${err.message}`)
     }
+})
+
+// ── 10. dedupPlugin 演示 ──
+
+let dedupKey = 0
+
+const dedupRequest = createRequest({
+    adapter: fetchAdapter(),
+    baseURL: API_BASE,
+    plugins: [
+        dedupPlugin(),
+        errorPlugin({
+            onError(error) {
+                log('panel-errors', 'error', `[${formatTime()}] [${error.type}] ${error.message}`)
+            },
+        }),
+    ],
+})
+
+async function resetDedupCounter() {
+    await fetch(`${API_BASE}/api/dedup-test/reset`, { method: 'POST' })
+}
+
+$('btn-dedup-same').addEventListener('click', async () => {
+    clear('panel-dedup')
+    await resetDedupCounter()
+    const count = Number($('input-dedup-count').value) || 3
+    const delay = Number($('input-dedup-delay').value) || 500
+    const key = `same-${++dedupKey}`
+
+    log('panel-dedup', 'info', `[${formatTime()}] → 并发 ${count} 个相同请求: GET /api/dedup-test?key=${key}&delay=${delay}`)
+    log('panel-dedup', 'info', `[${formatTime()}] 预期: 服务端仅收到 1 次请求，所有调用者共享同一个响应`)
+
+    const promises = Array.from({ length: count }, () =>
+        dedupRequest.get('/api/dedup-test', { params: { key, delay } })
+    )
+
+    const results = await Promise.all(promises)
+    for (let i = 0; i < results.length; i++) {
+        const res = results[i]
+        log('panel-dedup', 'success', `[${formatTime()}] 调用者 #${i + 1} ← hitCount=${res.data.data.hitCount} ${res.data.data.message}`)
+    }
+
+    const allSame = results.every(r => r === results[0])
+    log('panel-dedup', allSame ? 'success' : 'warn',
+        `[${formatTime()}] 所有 Promise 引用相同: ${allSame ? '✓ 是（去重生效）' : '✗ 否'}`)
+})
+
+$('btn-dedup-diff').addEventListener('click', async () => {
+    clear('panel-dedup')
+    await resetDedupCounter()
+    const delay = Number($('input-dedup-delay').value) || 500
+    const baseKey = `diff-${++dedupKey}`
+
+    log('panel-dedup', 'info', `[${formatTime()}] → 并发 3 个不同请求（key 不同）`)
+    log('panel-dedup', 'info', `[${formatTime()}] 预期: 服务端收到 3 次请求，每个 hitCount 都为 1`)
+
+    const promises = [
+        dedupRequest.get('/api/dedup-test', { params: { key: `${baseKey}-a`, delay } }),
+        dedupRequest.get('/api/dedup-test', { params: { key: `${baseKey}-b`, delay } }),
+        dedupRequest.get('/api/dedup-test', { params: { key: `${baseKey}-c`, delay } }),
+    ]
+
+    const results = await Promise.all(promises)
+    for (let i = 0; i < results.length; i++) {
+        const res = results[i]
+        log('panel-dedup', 'success', `[${formatTime()}] 请求 #${i + 1} ← hitCount=${res.data.data.hitCount} key=${res.data.data.key}`)
+    }
+})
+
+$('btn-dedup-skip').addEventListener('click', async () => {
+    clear('panel-dedup')
+    await resetDedupCounter()
+    const count = Number($('input-dedup-count').value) || 3
+    const delay = Number($('input-dedup-delay').value) || 500
+    const key = `skip-${++dedupKey}`
+
+    log('panel-dedup', 'info', `[${formatTime()}] → 并发 ${count} 个相同请求，全部设置 meta.dedup=false`)
+    log('panel-dedup', 'info', `[${formatTime()}] 预期: 跳过去重，服务端收到 ${count} 次请求`)
+
+    const promises = Array.from({ length: count }, () =>
+        dedupRequest.get('/api/dedup-test', { params: { key, delay }, meta: { dedup: false } })
+    )
+
+    const results = await Promise.all(promises)
+    for (let i = 0; i < results.length; i++) {
+        const res = results[i]
+        log('panel-dedup', 'success', `[${formatTime()}] 调用者 #${i + 1} ← hitCount=${res.data.data.hitCount}`)
+    }
+
+    const maxHit = Math.max(...results.map(r => r.data.data.hitCount))
+    log('panel-dedup', maxHit === count ? 'success' : 'warn',
+        `[${formatTime()}] 服务端最大命中计数: ${maxHit}（预期 ${count}）${maxHit === count ? ' ✓ 去重已跳过' : ''}`)
+})
+
+$('btn-dedup-sequential').addEventListener('click', async () => {
+    clear('panel-dedup')
+    await resetDedupCounter()
+    const delay = Number($('input-dedup-delay').value) || 500
+    const key = `seq-${++dedupKey}`
+
+    log('panel-dedup', 'info', `[${formatTime()}] → 先发第 1 个请求并等待完成，再发第 2 个相同请求`)
+    log('panel-dedup', 'info', `[${formatTime()}] 预期: 两次请求都到达服务端（第一个已释放，不再去重）`)
+
+    const res1 = await dedupRequest.get('/api/dedup-test', { params: { key, delay } })
+    log('panel-dedup', 'success', `[${formatTime()}] 第 1 次 ← hitCount=${res1.data.data.hitCount}`)
+
+    const res2 = await dedupRequest.get('/api/dedup-test', { params: { key, delay } })
+    log('panel-dedup', 'success', `[${formatTime()}] 第 2 次 ← hitCount=${res2.data.data.hitCount}`)
+
+    log('panel-dedup', res2.data.data.hitCount === 2 ? 'success' : 'warn',
+        `[${formatTime()}] 第 2 次 hitCount=${res2.data.data.hitCount}（预期 2）${res2.data.data.hitCount === 2 ? ' ✓ 已释放，正常发送' : ''}`)
 })
 
 // ── 清空错误日志 ──

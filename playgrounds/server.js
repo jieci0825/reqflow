@@ -113,6 +113,32 @@ router.post('/flaky/reset', ctx => {
     ctx.body = { code: 0, data: { message: '计数器已重置' } }
 })
 
+// ── Dedup 验证端点：带延迟的计数器，用于证明请求是否真正到达服务端 ──
+
+const dedupCounters = new Map()
+
+router.get('/dedup-test', async ctx => {
+    const key = ctx.query.key || 'default'
+    const ms = Math.min(Math.max(Number(ctx.query.delay) || 500, 0), 10000)
+    const current = (dedupCounters.get(key) || 0) + 1
+    dedupCounters.set(key, current)
+
+    await new Promise(r => setTimeout(r, ms))
+    ctx.body = {
+        code: 0,
+        data: {
+            key,
+            hitCount: current,
+            message: `第 ${current} 次命中（延迟 ${ms}ms）`,
+        },
+    }
+})
+
+router.post('/dedup-test/reset', ctx => {
+    dedupCounters.clear()
+    ctx.body = { code: 0, data: { message: '去重计数器已重置' } }
+})
+
 // ── 中间件 & 静态文件 ──
 
 app.use(cors())
