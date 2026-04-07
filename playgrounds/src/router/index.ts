@@ -37,6 +37,12 @@ export const navItems = [
         badge: 'DEDUP',
         badgeColor: 'teal',
     },
+    {
+        path: '/cache-plugin',
+        label: 'Cache 插件',
+        badge: 'CACHE',
+        badgeColor: 'green',
+    },
 ] as const
 
 export const router = createRouter({
@@ -66,6 +72,10 @@ export const router = createRouter({
         {
             path: '/dedup-plugin',
             component: () => import('@/demos/dedup-plugin/index.vue'),
+        },
+        {
+            path: '/cache-plugin',
+            component: () => import('@/demos/cache-plugin/index.vue'),
         },
     ],
 })

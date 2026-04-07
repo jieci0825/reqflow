@@ -132,6 +132,33 @@ router.post('/dedup-test/reset', ctx => {
     ctx.body = { code: 0, data: { message: '去重计数器已重置' } }
 })
 
+// ── Cache 验证端点：每次请求返回递增计数和时间戳，用于验证缓存是否命中 ──
+
+const cacheCounters = new Map()
+
+router.get('/cache-test', async ctx => {
+    const key = ctx.query.key || 'default'
+    const ms = Math.min(Math.max(Number(ctx.query.delay) || 200, 0), 10000)
+    const current = (cacheCounters.get(key) || 0) + 1
+    cacheCounters.set(key, current)
+
+    await new Promise(r => setTimeout(r, ms))
+    ctx.body = {
+        code: 0,
+        data: {
+            key,
+            hitCount: current,
+            timestamp: Date.now(),
+            message: `第 ${current} 次请求到达服务端`,
+        },
+    }
+})
+
+router.post('/cache-test/reset', ctx => {
+    cacheCounters.clear()
+    ctx.body = { code: 0, data: { message: '缓存计数器已重置' } }
+})
+
 // ── 中间件 ──
 
 app.use(cors())
