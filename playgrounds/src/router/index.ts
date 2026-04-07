@@ -49,6 +49,12 @@ export const navItems = [
         badge: 'RACE',
         badgeColor: 'cyan',
     },
+    {
+        path: '/dual-token-plugin',
+        label: 'Dual Token 插件',
+        badge: 'DUAL-TOKEN',
+        badgeColor: 'purple',
+    },
 ] as const
 
 export const router = createRouter({
@@ -86,6 +92,10 @@ export const router = createRouter({
         {
             path: '/race-plugin',
             component: () => import('@/demos/race-plugin/index.vue'),
+        },
+        {
+            path: '/dual-token-plugin',
+            component: () => import('@/demos/dual-token-plugin/index.vue'),
         },
     ],
 })
