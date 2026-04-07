@@ -55,6 +55,12 @@ export const navItems = [
         badge: 'DUAL-TOKEN',
         badgeColor: 'purple',
     },
+    {
+        path: '/sse-parser',
+        label: 'SSE 解析器',
+        badge: 'SSE',
+        badgeColor: 'green',
+    },
 ] as const
 
 export const router = createRouter({
@@ -96,6 +102,10 @@ export const router = createRouter({
         {
             path: '/dual-token-plugin',
             component: () => import('@/demos/dual-token-plugin/index.vue'),
+        },
+        {
+            path: '/sse-parser',
+            component: () => import('@/demos/sse-parser/index.vue'),
         },
     ],
 })

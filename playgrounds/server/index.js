@@ -11,6 +11,7 @@ import { registerFlakyRoutes } from './routes/flaky.js'
 import { registerDedupRoutes } from './routes/dedup.js'
 import { registerCacheRoutes } from './routes/cache.js'
 import { registerRaceRoutes } from './routes/race.js'
+import { registerSSERoutes } from './routes/sse.js'
 
 const app = new Koa()
 const router = new Router({ prefix: '/api' })
@@ -23,6 +24,7 @@ registerFlakyRoutes(router)
 registerDedupRoutes(router)
 registerCacheRoutes(router)
 registerRaceRoutes(router)
+registerSSERoutes(router)
 
 app.use(cors())
 app.use(bodyParser())

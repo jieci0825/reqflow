@@ -10,6 +10,7 @@ export default defineConfig({
             '@': resolve(__dirname, 'src'),
             'reqflow/adapters/fetch': resolve(__dirname, '../../dist/adapters/fetch.mjs'),
             'reqflow/plugins': resolve(__dirname, '../../dist/plugins.mjs'),
+            'reqflow/sse': resolve(__dirname, '../../dist/sse/index.mjs'),
             'reqflow': resolve(__dirname, '../../dist/index.mjs'),
         },
     },

@@ -127,6 +127,16 @@ const route = useRoute()
             color: var(--orange);
         }
 
+        &[data-color='green'] {
+            background: rgba(74, 222, 128, 0.2);
+            color: var(--green);
+        }
+
+        &[data-color='cyan'] {
+            background: rgba(34, 211, 238, 0.2);
+            color: var(--cyan);
+        }
+
         &[data-color='teal'] {
             background: rgba(45, 212, 191, 0.2);
             color: var(--teal);
