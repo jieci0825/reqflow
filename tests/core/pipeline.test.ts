@@ -132,12 +132,14 @@ describe('compose', () => {
         expect(adapter.request).not.toHaveBeenCalled()
     })
 
-    it('next() 重复调用抛出错误', async () => {
+    it('next() 并发重复调用抛出错误', async () => {
         const adapter = createAdapter()
 
         const badMiddleware: Middleware = async (config, next) => {
-            await next(config)
-            return next(config)
+            const p1 = next(config)
+            const p2 = next(config)
+            await p1
+            return p2
         }
 
         const dispatch = compose([badMiddleware], adapter)
@@ -145,6 +147,31 @@ describe('compose', () => {
         await expect(dispatch(createConfig())).rejects.toThrow(
             'next() 被重复调用'
         )
+    })
+
+    it('next() 前一次调用完成后可再次调用（支持重试场景）', async () => {
+        let callCount = 0
+        const failOnceAdapter: Adapter = {
+            request: vi.fn(async (config: RequestConfig) => {
+                callCount++
+                if (callCount === 1) throw new Error('first call fails')
+                return createResponse({ config, data: 'retry-success' })
+            }),
+        }
+
+        const retryMiddleware: Middleware = async (config, next) => {
+            try {
+                return await next(config)
+            } catch {
+                return next(config)
+            }
+        }
+
+        const dispatch = compose([retryMiddleware], failOnceAdapter)
+        const res = await dispatch(createConfig())
+
+        expect(res.data).toBe('retry-success')
+        expect(failOnceAdapter.request).toHaveBeenCalledTimes(2)
     })
 
     it('中间件抛出的异常会向外层冒泡', async () => {
