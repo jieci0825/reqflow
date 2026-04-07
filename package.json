@@ -39,6 +39,16 @@
                 "types": "./dist/plugins.d.cts",
                 "default": "./dist/plugins.cjs"
             }
+        },
+        "./sse": {
+            "import": {
+                "types": "./dist/sse/index.d.mts",
+                "default": "./dist/sse/index.mjs"
+            },
+            "require": {
+                "types": "./dist/sse/index.d.cts",
+                "default": "./dist/sse/index.cjs"
+            }
         }
     },
     "files": [
