@@ -1,6 +1,6 @@
 {
     "name": "@coderjc/reqflow",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "一个基于插件与中间件的请求管线框架，支持 fetch、axios 等多种适配器。",
     "author": "coderjc <coderjc@qq.com>",
     "repository": {
