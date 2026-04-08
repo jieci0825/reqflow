@@ -2,6 +2,7 @@
 import { createRequest } from 'reqflow'
 import { fetchAdapter } from 'reqflow/adapters/fetch'
 import { errorPlugin, retryPlugin } from 'reqflow/plugins'
+import type { RetryPluginOptions } from 'reqflow/plugins'
 import { ref } from 'vue'
 
 import DemoCard from '@/components/demo-card.vue'
@@ -15,7 +16,7 @@ const { logs, log, clear } = useLog()
 
 let retryKey = 0
 
-function createRetryRequest(retryOpts: Record<string, unknown>) {
+function createRetryRequest(retryOpts: RetryPluginOptions) {
     const { log: errorLog } = useErrorLog()
     return createRequest({
         adapter: fetchAdapter(),
@@ -34,14 +35,18 @@ function createRetryRequest(retryOpts: Record<string, unknown>) {
 async function basicRetry() {
     clear()
     const key = `basic-${++retryKey}`
-    log('info', `配置: maxRetries=${maxRetries.value}, delay=0, 服务端失败${failCount.value}次后成功`)
+    log(
+        'info',
+        `配置: maxRetries=${maxRetries.value}, delay=0, 服务端失败${failCount.value}次后成功`
+    )
     log('info', `→ GET /api/flaky/${failCount.value}`)
 
     const req = createRetryRequest({ maxRetries: maxRetries.value })
     try {
         const res = await req.get(`/api/flaky/${failCount.value}?key=${key}`)
         log('success', `← ${res.status} ${JSON.stringify(res.data)}`)
-        const retries = (res.config?.meta as Record<string, number>)?.retryCount || 0
+        const retries =
+            (res.config?.meta as Record<string, number>)?.retryCount || 0
         log('success', `共重试 ${retries} 次`)
     } catch (err: unknown) {
         log('error', `✗ ${(err as Error).message}`)
@@ -51,14 +56,18 @@ async function basicRetry() {
 async function delayRetry() {
     clear()
     const key = `delay-${++retryKey}`
-    log('info', `配置: maxRetries=${maxRetries.value}, delay=500ms, 服务端失败${failCount.value}次后成功`)
+    log(
+        'info',
+        `配置: maxRetries=${maxRetries.value}, delay=500ms, 服务端失败${failCount.value}次后成功`
+    )
     log('info', `→ GET /api/flaky/${failCount.value}`)
 
     const req = createRetryRequest({ maxRetries: maxRetries.value, delay: 500 })
     try {
         const res = await req.get(`/api/flaky/${failCount.value}?key=${key}`)
         log('success', `← ${res.status} ${JSON.stringify(res.data)}`)
-        const retries = (res.config?.meta as Record<string, number>)?.retryCount || 0
+        const retries =
+            (res.config?.meta as Record<string, number>)?.retryCount || 0
         log('success', `共重试 ${retries} 次，每次间隔 500ms`)
     } catch (err: unknown) {
         log('error', `✗ ${(err as Error).message}`)
@@ -68,18 +77,29 @@ async function delayRetry() {
 async function backoffRetry() {
     clear()
     const key = `backoff-${++retryKey}`
-    const backoffFn = (attempt: number) => Math.min(1000 * Math.pow(2, attempt - 1), 8000)
-    const sequence = Array.from({ length: maxRetries.value }, (_, i) => backoffFn(i + 1) + 'ms').join(' → ')
+    const backoffFn = (attempt: number) =>
+        Math.min(1000 * Math.pow(2, attempt - 1), 8000)
+    const sequence = Array.from(
+        { length: maxRetries.value },
+        (_, i) => backoffFn(i + 1) + 'ms'
+    ).join(' → ')
 
-    log('info', `配置: maxRetries=${maxRetries.value}, delay=指数退避 min(1000*2^(n-1), 8000)ms`)
+    log(
+        'info',
+        `配置: maxRetries=${maxRetries.value}, delay=指数退避 min(1000*2^(n-1), 8000)ms`
+    )
     log('info', `退避序列: ${sequence}`)
     log('info', `→ GET /api/flaky/${failCount.value}`)
 
-    const req = createRetryRequest({ maxRetries: maxRetries.value, delay: backoffFn })
+    const req = createRetryRequest({
+        maxRetries: maxRetries.value,
+        delay: backoffFn,
+    })
     try {
         const res = await req.get(`/api/flaky/${failCount.value}?key=${key}`)
         log('success', `← ${res.status} ${JSON.stringify(res.data)}`)
-        const retries = (res.config?.meta as Record<string, number>)?.retryCount || 0
+        const retries =
+            (res.config?.meta as Record<string, number>)?.retryCount || 0
         log('success', `共重试 ${retries} 次（指数退避）`)
     } catch (err: unknown) {
         log('error', `✗ ${(err as Error).message}`)
@@ -91,7 +111,10 @@ async function failAllRetry() {
     const key = `fail-${++retryKey}`
     const totalFail = maxRetries.value + 5
 
-    log('info', `配置: maxRetries=${maxRetries.value}, 服务端持续失败${totalFail}次`)
+    log(
+        'info',
+        `配置: maxRetries=${maxRetries.value}, 服务端持续失败${totalFail}次`
+    )
     log('info', `预期: 重试 ${maxRetries.value} 次后仍失败，返回最后的错误响应`)
     log('info', `→ GET /api/flaky/${totalFail}`)
 
@@ -113,7 +136,10 @@ async function conditionRetry() {
     clear()
     const key = `cond-${++retryKey}`
 
-    log('info', `配置: maxRetries=${maxRetries.value}, retryOn=仅 HTTP 5xx 错误`)
+    log(
+        'info',
+        `配置: maxRetries=${maxRetries.value}, retryOn=仅 HTTP 5xx 错误`
+    )
     log('info', '→ GET /api/flaky/2 (5xx 错误，会重试)')
 
     const retryOn = (error: { type: string; status?: number }) =>
@@ -128,14 +154,18 @@ async function conditionRetry() {
     try {
         const res = await req.get(`/api/flaky/2?key=${key}`)
         log('success', `← ${res.status} ${JSON.stringify(res.data)}`)
-        const retries = (res.config?.meta as Record<string, number>)?.retryCount || 0
+        const retries =
+            (res.config?.meta as Record<string, number>)?.retryCount || 0
         log('success', `共重试 ${retries} 次（仅 5xx 条件触发）`)
     } catch (err: unknown) {
         log('error', `✗ ${(err as Error).message}`)
     }
 
     log('info', '')
-    log('info', '→ GET /api/protected (401 错误，不满足 retryOn 条件，不会重试)')
+    log(
+        'info',
+        '→ GET /api/protected (401 错误，不满足 retryOn 条件，不会重试)'
+    )
 
     const req2 = createRetryRequest({
         maxRetries: maxRetries.value,
