@@ -1,6 +1,6 @@
 {
-    "name": "reqflow",
-    "version": "0.0.1",
+    "name": "@coderjc/reqflow",
+    "version": "0.0.2",
     "description": "一个基于插件与中间件的请求管线框架，支持 fetch、axios 等多种适配器。",
     "author": "coderjc <coderjc@qq.com>",
     "repository": {
@@ -81,13 +81,12 @@
         "test:watch": "vitest",
         "build": "tsdown",
         "prepublishOnly": "npm run build",
-        "server": "node playgrounds/server.js",
-        "docs:dev": "vitepress dev docs",
-        "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "release": "bumpp && npm publish --access public",
+        "server": "node playgrounds/server.js"
     },
     "devDependencies": {
         "@types/node": "^25.5.2",
+        "bumpp": "^11.0.1",
         "tsdown": "^0.21.7",
         "typescript": "^6.0.2",
         "vitepress": "^1.6.4",
