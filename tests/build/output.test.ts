@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -62,6 +62,25 @@ describe('构建产物验证', () => {
 
         it('CJS plugins 类型声明', () => {
             expect(existsSync(distPath('plugins.d.cts'))).toBe(true)
+        })
+    })
+
+    describe('类型声明内容正确', () => {
+        it('createRequest 返回公开的 RequestClient 接口', () => {
+            const indexDts = readFileSync(distPath('index.d.mts'), 'utf-8')
+            const typesDtsName = readdirSync(dist).find(
+                (file) => /^types-.*\.d\.mts$/.test(file)
+            )
+
+            expect(indexDts).toContain(
+                'declare function createRequest(config: GlobalConfig): RequestClient;'
+            )
+            expect(indexDts).toContain('type RequestClient')
+            expect(indexDts).not.toContain('declare class RequestEngine')
+            expect(typesDtsName).toBeTruthy()
+
+            const typesDts = readFileSync(distPath(typesDtsName!), 'utf-8')
+            expect(typesDts).toContain('interface RequestClient')
         })
     })
 

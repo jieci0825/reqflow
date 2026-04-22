@@ -5,6 +5,7 @@ import type {
     GlobalConfig,
     Middleware,
     PluginContext,
+    RequestClient,
     RequestConfig,
     Response,
 } from './types'
@@ -20,7 +21,7 @@ function joinURL(baseURL: string, relativeURL: string): string {
 }
 
 /** 请求引擎类，负责管理全局配置、中间件、适配器和插件 */
-class RequestEngine {
+class RequestEngine implements RequestClient {
     private adapter: Adapter
     private middlewares: Middleware[] = []
     private shared: Map<string, any> = new Map()
@@ -149,6 +150,6 @@ class RequestEngine {
 }
 
 /** 创建请求引擎实例，接收全局配置并初始化插件系统 */
-export function createRequest(config: GlobalConfig): RequestEngine {
+export function createRequest(config: GlobalConfig): RequestClient {
     return new RequestEngine(config)
 }

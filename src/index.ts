@@ -9,6 +9,7 @@ export type {
     Next,
     Plugin,
     PluginContext,
+    RequestClient,
     RequestConfig,
     Response,
 } from './core'

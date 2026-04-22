@@ -95,3 +95,47 @@ export interface GlobalConfig {
     /** 插件列表，按数组顺序决定中间件执行顺序（靠前 = 更外层） */
     plugins?: Plugin[]
 }
+
+/** createRequest 返回的公开请求客户端接口 */
+export interface RequestClient {
+    /** 发送通用请求 */
+    request<T = any>(requestConfig: RequestConfig): Promise<Response<T>>
+    /** 发送 GET 请求 */
+    get<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>>
+    /** 发送 POST 请求 */
+    post<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>>
+    /** 发送 PUT 请求 */
+    put<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>>
+    /** 发送 DELETE 请求 */
+    delete<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>>
+    /** 发送 PATCH 请求 */
+    patch<T = any>(
+        url: string,
+        data?: any,
+        config?: Omit<RequestConfig, 'url' | 'method' | 'data'>
+    ): Promise<Response<T>>
+    /** 发送 HEAD 请求 */
+    head<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>>
+    /** 发送 OPTIONS 请求 */
+    options<T = any>(
+        url: string,
+        config?: Omit<RequestConfig, 'url' | 'method'>
+    ): Promise<Response<T>>
+}
