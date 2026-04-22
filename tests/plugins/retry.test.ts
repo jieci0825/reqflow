@@ -219,6 +219,42 @@ describe('retryPlugin', () => {
         expect(adapter.request).toHaveBeenCalledTimes(2)
     })
 
+    it('运行时异常会以 runtime 类型传给 retryOn', async () => {
+        const retryOn = vi.fn((error: RequestError) => error.type !== 'runtime')
+        const adapter: Adapter = {
+            request: vi.fn(async (config: RequestConfig) => ({
+                data: 'ok',
+                status: 200,
+                statusText: 'OK',
+                headers: {},
+                config,
+            })),
+        }
+        const engine = createRequest({
+            adapter,
+            plugins: [
+                retryPlugin({
+                    maxRetries: 3,
+                    retryOn,
+                }),
+            ],
+        })
+
+        await expect(
+            engine.get('/users', {
+                middleware: [
+                    async () => {
+                        throw new Error('middleware crashed')
+                    },
+                ],
+            })
+        ).rejects.toThrow('middleware crashed')
+
+        expect(retryOn).toHaveBeenCalledOnce()
+        expect(retryOn.mock.calls[0][0].type).toBe('runtime')
+        expect(adapter.request).not.toHaveBeenCalled()
+    })
+
     it('HTTP 状态码错误（如 500）也能触发重试', async () => {
         let callCount = 0
         const adapter: Adapter = {

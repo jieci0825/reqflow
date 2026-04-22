@@ -6,6 +6,8 @@ import type {
     Response,
 } from './types'
 
+import { ensureRequestFailure } from './error-kind'
+
 /** 将中间件数组与适配器组合为洋葱模型执行链 */
 export function compose(middlewares: Middleware[], adapter: Adapter): Next {
     return function dispatch(config: RequestConfig): Promise<Response> {
@@ -19,7 +21,13 @@ export function compose(middlewares: Middleware[], adapter: Adapter): Next {
             index = i
 
             if (i === middlewares.length) {
-                return adapter.request(cfg)
+                try {
+                    return adapter.request(cfg).catch(err => {
+                        throw ensureRequestFailure(err, 'network')
+                    })
+                } catch (err) {
+                    return Promise.reject(ensureRequestFailure(err, 'network'))
+                }
             }
 
             const middleware = middlewares[i]

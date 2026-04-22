@@ -1,9 +1,11 @@
 import type { Plugin, RequestConfig, Response } from '@/core/types'
 
+import { getRequestFailureKind, normalizeError } from '@/core/error-kind'
+
 /** errorPlugin 传递给 onError 回调的错误信息 */
 export interface RequestError {
-    /** 错误来源：http 表示状态码异常，network 表示网络层抛出异常 */
-    type: 'http' | 'network'
+    /** 错误来源：http 表示状态码异常，network 表示传输层异常，runtime 表示本地代码执行异常 */
+    type: 'http' | 'network' | 'runtime'
     /** 可读的错误描述 */
     message: string
     /** HTTP 状态码，仅在 type 为 http 时存在 */
@@ -12,7 +14,7 @@ export interface RequestError {
     response?: Response
     /** 产生此错误的原始请求配置 */
     config: RequestConfig
-    /** 原始异常对象，仅在 type 为 network 时存在 */
+    /** 原始异常对象，仅在 type 为 network/runtime 时存在 */
     cause?: Error
 }
 
@@ -24,7 +26,7 @@ export interface ErrorPluginOptions {
     skipCodes?: number[]
 }
 
-/** 统一捕获 HTTP 错误与网络异常，通过 onError 回调通知调用方 */
+/** 统一捕获 HTTP 错误、传输层异常与运行时异常，通过 onError 回调通知调用方 */
 export function errorPlugin(options: ErrorPluginOptions): Plugin {
     const { onError, skipCodes = [] } = options
 
@@ -37,10 +39,9 @@ export function errorPlugin(options: ErrorPluginOptions): Plugin {
                 try {
                     response = await next(config)
                 } catch (err) {
-                    const cause =
-                        err instanceof Error ? err : new Error(String(err))
+                    const cause = normalizeError(err)
                     onError({
-                        type: 'network',
+                        type: getRequestFailureKind(err) ?? 'runtime',
                         message: cause.message,
                         config,
                         cause,

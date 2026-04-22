@@ -1,5 +1,7 @@
 import type { Adapter, RequestConfig, Response } from '@/core/types'
 
+import { tagRequestFailure } from '@/core/error-kind'
+
 /** 将查询参数拼接到 URL */
 function buildURL(url: string, params?: Record<string, any>): string {
     if (!params) return url
@@ -125,11 +127,22 @@ export function fetchAdapter(): Adapter {
                 }
 
                 if (data !== undefined && canHaveBody(method)) {
-                    init.body = serializeBody(data)
+                    try {
+                        init.body = serializeBody(data)
+                    } catch (err) {
+                        throw tagRequestFailure(err, 'runtime')
+                    }
                 }
 
-                const raw = await fetch(fullURL, init)
-                const body = await parseBody(raw, responseType)
+                let raw: globalThis.Response
+                let body: any
+
+                try {
+                    raw = await fetch(fullURL, init)
+                    body = await parseBody(raw, responseType)
+                } catch (err) {
+                    throw tagRequestFailure(err, 'network')
+                }
 
                 return {
                     data: body,

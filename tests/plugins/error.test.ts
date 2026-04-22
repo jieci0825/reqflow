@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 
+import { fetchAdapter } from '@/adapters/fetch'
 import { createRequest } from '@/core/engine'
 import { errorPlugin } from '@/plugins/error'
 
@@ -97,6 +98,31 @@ describe('errorPlugin', () => {
         })
 
         await expect(engine.get('/users')).rejects.toThrow(networkError)
+    })
+
+    it('中间件执行异常会被识别为 runtime', async () => {
+        const onError = vi.fn()
+        const runtimeError = new Error('middleware crashed')
+        const engine = createRequest({
+            adapter: createMockAdapter(),
+            plugins: [errorPlugin({ onError })],
+        })
+
+        await expect(
+            engine.get('/users', {
+                middleware: [
+                    async () => {
+                        throw runtimeError
+                    },
+                ],
+            })
+        ).rejects.toThrow(runtimeError)
+
+        expect(onError).toHaveBeenCalledOnce()
+        const error: RequestError = onError.mock.calls[0][0]
+        expect(error.type).toBe('runtime')
+        expect(error.message).toBe('middleware crashed')
+        expect(error.cause).toBe(runtimeError)
     })
 
     it('skipCodes 配置的状态码不触发回调', async () => {
@@ -220,5 +246,30 @@ describe('errorPlugin', () => {
         expect(error.type).toBe('network')
         expect(error.message).toBe('string error')
         expect(error.cause).toBeInstanceOf(Error)
+    })
+
+    it('请求序列化异常会被识别为 runtime', async () => {
+        const onError = vi.fn()
+        const circular: Record<string, any> = {}
+        circular.self = circular
+
+        vi.stubGlobal('fetch', vi.fn())
+
+        try {
+            const engine = createRequest({
+                adapter: fetchAdapter(),
+                plugins: [errorPlugin({ onError })],
+            })
+
+            await expect(engine.post('/users', circular)).rejects.toThrow()
+
+            expect(onError).toHaveBeenCalledOnce()
+            const error: RequestError = onError.mock.calls[0][0]
+            expect(error.type).toBe('runtime')
+            expect(error.message).toContain('circular')
+            expect(error.cause).toBeInstanceOf(TypeError)
+        } finally {
+            vi.unstubAllGlobals()
+        }
     })
 })

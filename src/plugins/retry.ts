@@ -1,5 +1,7 @@
 import type { Plugin, Response } from '@/core/types'
 
+import { getRequestFailureKind, normalizeError } from '@/core/error-kind'
+
 import type { RequestError } from './error'
 
 /** retryPlugin 配置项 */
@@ -52,10 +54,9 @@ export function retryPlugin(options: RetryPluginOptions): Plugin {
                     try {
                         response = await next(config)
                     } catch (err) {
-                        const cause =
-                            err instanceof Error ? err : new Error(String(err))
+                        const cause = normalizeError(err)
                         const error: RequestError = {
-                            type: 'network',
+                            type: getRequestFailureKind(err) ?? 'runtime',
                             message: cause.message,
                             config,
                             cause,

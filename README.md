@@ -422,7 +422,7 @@ dualTokenPlugin({
 
 ### errorPlugin — 统一错误处理
 
-统一捕获 HTTP 错误（状态码 ≥ 400）和网络异常，通过 `onError` 回调通知调用方。
+统一捕获 HTTP 错误（状态码 ≥ 400）、传输层异常和本地运行时异常，通过 `onError` 回调通知调用方。
 
 ```typescript
 import { errorPlugin } from '@coderjc/reqflow/plugins'
@@ -442,6 +442,12 @@ errorPlugin({
       console.log(error.cause)  // 原始 Error 对象
     }
 
+    if (error.type === 'runtime') {
+      // 运行时错误：本地中间件、插件或请求序列化逻辑抛出的异常
+      console.error('运行时异常:', error.message)
+      console.log(error.cause)  // 原始 Error 对象
+    }
+
     // error.config 始终存在，包含原始请求配置
     console.log('请求配置:', error.config)
   },
@@ -455,16 +461,16 @@ errorPlugin({
 
 ```typescript
 interface RequestError {
-  type: 'http' | 'network'
+  type: 'http' | 'network' | 'runtime'
   message: string
   status?: number          // 仅 http 类型
   response?: Response      // 仅 http 类型
   config: RequestConfig
-  cause?: Error            // 仅 network 类型
+  cause?: Error            // 仅 network/runtime 类型
 }
 ```
 
-> errorPlugin **不会吞掉错误**：对于网络异常会在 `onError` 回调后继续向外抛出；对于 HTTP 错误会正常返回响应。它只是提供了一个集中处理错误的切面。
+> errorPlugin **不会吞掉错误**：对于 network/runtime 异常会在 `onError` 回调后继续向外抛出；对于 HTTP 错误会正常返回响应。它只是提供了一个集中处理错误的切面。
 
 ---
 
@@ -487,8 +493,9 @@ retryPlugin({
 
   // 可选：判断是否需要重试，默认对所有错误重试
   retryOn: (error) => {
-    // 仅在网络错误或 5xx 时重试
+    // 仅在网络错误或 5xx 时重试，运行时错误不重试
     if (error.type === 'network') return true
+    if (error.type === 'runtime') return false
     if (error.status && error.status >= 500) return true
     return false
   },
@@ -497,9 +504,9 @@ retryPlugin({
 
 重试机制细节：
 
-- 同时拦截**网络异常**（`catch` 捕获）和 **HTTP 错误**（状态码 ≥ 400）
+- 同时拦截**network/runtime 异常**（`catch` 捕获）和 **HTTP 错误**（状态码 ≥ 400）
 - 重试时 `config.meta.retryCount` 会被自动设置为当前重试次数，下游中间件/插件可读取
-- 如果达到最大重试次数仍失败，网络异常会继续抛出，HTTP 错误会正常返回响应
+- 如果达到最大重试次数仍失败，network/runtime 异常会继续抛出，HTTP 错误会正常返回响应
 
 > 建议将 `retryPlugin` 放在 `errorPlugin` **内层**（数组中更靠后），这样只有在重试全部耗尽后 `errorPlugin` 才会被触发。
 
